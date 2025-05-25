@@ -1,6 +1,5 @@
-import './assets/main.css'
-
-import { createApp } from 'vue'
-import App from './App.vue'
-
-createApp(App).mount('#app')
+document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
+  <div>
+    <h1>Welcome to Vite + TypeScript</h1>
+  </div>
+`;
