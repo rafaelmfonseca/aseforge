@@ -25,7 +25,7 @@ function log(message: string) {
 const writer = new BinaryWriter()
 
 // Header
-writer.writeDword(0) // Size of the file (will be updated later)
+const fileSizePos = writer.writeDword(0) // Size of the file (will be updated later)
 writer.writeWord(0xa5e0) // Magic number
 writer.writeWord(1) // Frames
 writer.writeWord(20) // Width in pixels
@@ -49,7 +49,7 @@ writer.writeBytes(new Uint8Array(84)) // For future (set to zero)
 const chunkSize = 4
 
 // Frames
-writer.writeDword(0) // Frame size (will be updated later)
+const frameSizePos = writer.writeDword(0) // Frame size (will be updated later)
 writer.writeWord(0xf1fa) // Magic number
 writer.writeWord(chunkSize) // Old field which specifies the number of "chunks" in this frame
 writer.writeWord(100) // Frame duration
@@ -57,12 +57,18 @@ writer.writeBytes(new Uint8Array(2)) // For future (set to zero)
 writer.writeDword(chunkSize) // New field which specifies the number of "chunks" in this frame
 
 // Color profile chunk
-writer.writeDword(0) // Chunk size (will be updated later)
+const colorChunkSizePos = writer.writeDword(0) // Chunk size (will be updated later)
 writer.writeWord(0x2007) // Chunk type
 writer.writeWord(1) // Type: 1 - sRGB
 writer.writeWord(0) // Flags: 0 - no special gamma
 writer.writeFixed(0.0) // Fixed gamma: 1.0 = linear
 writer.writeBytes(new Uint8Array(8)) // Reserved (set to zero)
+
+// After writing all chunks, update sizes
+const totalSize = writer.getLength()
+writer.writeDwordAt(colorChunkSizePos, totalSize - (colorChunkSizePos + 4))
+writer.writeDwordAt(frameSizePos, totalSize - (frameSizePos + 4))
+writer.writeDwordAt(fileSizePos, totalSize)
 
 document
   .querySelector<HTMLButtonElement>('#decompileBinFile')!

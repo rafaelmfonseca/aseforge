@@ -71,6 +71,20 @@ export class BinaryWriter {
     return this.offset - data.length
   }
 
+  // Get current write offset (used to compute sizes)
+  public getLength(): number {
+    return this.offset
+  }
+
+  // Overwrite a 32-bit unsigned value (little-endian) at a given position
+  public writeDwordAt(position: number, value: number): void {
+    const fixedValue = value >>> 0
+    this.buffer[position] = fixedValue & 0xff
+    this.buffer[position + 1] = (fixedValue >>> 8) & 0xff
+    this.buffer[position + 2] = (fixedValue >>> 16) & 0xff
+    this.buffer[position + 3] = (fixedValue >>> 24) & 0xff
+  }
+
   getArrayBuffer(): ArrayBuffer {
     return this.buffer.slice(0, this.offset).buffer
   }
