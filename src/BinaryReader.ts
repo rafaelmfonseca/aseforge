@@ -35,6 +35,21 @@ export class BinaryReader {
     return value
   }
 
+  // FIXED: A 32-bit fixed point (16.16) value
+  readFixed(): number {
+    const value = this.view.getInt32(this.offset, true)
+    this.offset += 4
+    return value / 65536 // Convert to float
+  }
+
+  // WORD: string length (number of bytes)
+  // BYTE[length]: characters (in UTF-8) The '\0' character is not included.
+  readString(length: number): string {
+    const bytes = new Uint8Array(this.view.buffer, this.offset, length)
+    this.offset += length
+    return new TextDecoder().decode(bytes)
+  }
+
   incrementOffset(value: number): void {
     this.offset += value
   }

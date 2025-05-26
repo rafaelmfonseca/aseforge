@@ -2,22 +2,29 @@
 
 import { BinaryReader } from './BinaryReader'
 import { BinaryWriter } from './BinaryWriter'
+import { decompileAseFile } from './page1'
+import { loadFile } from './utils'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div id="logs">
+  <div style="dislay: flex; flex-direction: column; gap: 10px;">
+    <button id="decompileAseFile">Decompile Aseprite File</button>
+    <button id="decompileBinFile">Decompile Binary File</button>
   </div>
+  <div id="logs"></div>
 `
 
 const logs = document.querySelector<HTMLDivElement>('#logs')!
 
 function log(message: string) {
   const p = document.createElement('p')
-  p.textContent = message
+  p.innerHTML = message
+  p.style.lineHeight = '0.4'
   logs.appendChild(p)
 }
 
 const writer = new BinaryWriter()
 
+// Header
 writer.writeDword(0)
 writer.writeWord(0xa5e0) // Magic number
 writer.writeWord(1) // Frames
@@ -39,26 +46,29 @@ writer.writeWord(16) // Grid width (zero if there is no grid)
 writer.writeWord(16) // Grid height (zero if there is no grid)
 writer.writeBytes(new Uint8Array(84)) // For future (set to zero)
 
-const reader = new BinaryReader(writer.getArrayBuffer())
+const chunkSize = 4
 
-// Header
-log('Aseprite File Header')
-log('FileSize: ' + reader.readDword())
-log('Magic: ' + reader.readWord().toString(16))
-log('Frames: ' + reader.readWord())
-log('Width: ' + reader.readWord())
-log('Height: ' + reader.readWord())
-log('ColorDepth: ' + reader.readWord())
-log('Flags: ' + reader.readDword())
-log('Speed: ' + reader.readWord())
-log('Ignore Bytes: ' + reader.readDword() + ', ' + reader.readDword())
-log('Palette Index Transparent Color: ' + reader.readByte())
-log('Ignore Bytes: ' + reader.readByte() + ', ' + reader.readByte() + ', ' + reader.readByte())
-log('Number of Colors: ' + reader.readWord())
-log('Pixel Width: ' + reader.readByte())
-log('Pixel Height: ' + reader.readByte())
-log('Grid X Position: ' + reader.readShort())
-log('Grid Y Position: ' + reader.readShort())
-log('Grid Width: ' + reader.readWord())
-log('Grid Height: ' + reader.readWord())
-log('Future Bytes: ' + Array.from({ length: 84 }, () => reader.readByte()).join(', '))
+// Frames
+writer.writeDword(0) // Frame size
+writer.writeWord(0xf1fa) // Magic number
+writer.writeWord(chunkSize) // Old field which specifies the number of "chunks" in this frame
+writer.writeWord(100) // Frame duration
+writer.writeBytes(new Uint8Array(2)) // For future (set to zero)
+writer.writeDword(chunkSize) // New field which specifies the number of "chunks" in this frame
+
+document
+  .querySelector<HTMLButtonElement>('#decompileBinFile')!
+  .addEventListener('click', async () => {
+    logs.innerHTML = ''
+    const arrayBuffer = writer.getArrayBuffer()
+    decompileAseFile(arrayBuffer, log)
+  })
+
+document
+  .querySelector<HTMLButtonElement>('#decompileAseFile')!
+  .addEventListener('click', async () => {
+    logs.innerHTML = ''
+    const file = await loadFile('sample.aseprite')
+    const arrayBuffer = await file.arrayBuffer()
+    decompileAseFile(arrayBuffer, log)
+  })
