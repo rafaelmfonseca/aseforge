@@ -45,6 +45,17 @@ export class BinaryWriter {
     return this.offset - 2
   }
 
+  // FIXED: A 32-bit fixed point (16.16) value
+  public writeFixed(value: number): number {
+    this.ensureCapacity(4)
+    const fixedValue = Math.round(value * 65536) // Convert to fixed point
+    this.buffer[this.offset++] = fixedValue & 0xff
+    this.buffer[this.offset++] = (fixedValue >> 8) & 0xff
+    this.buffer[this.offset++] = (fixedValue >> 16) & 0xff
+    this.buffer[this.offset++] = (fixedValue >> 24) & 0xff
+    return this.offset - 4
+  }
+
   // BYTE: An 8-bit unsigned integer value
   public writeByte(value: number): number {
     this.ensureCapacity(1)

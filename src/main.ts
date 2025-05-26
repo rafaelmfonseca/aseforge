@@ -25,7 +25,7 @@ function log(message: string) {
 const writer = new BinaryWriter()
 
 // Header
-writer.writeDword(0)
+writer.writeDword(0) // Size of the file (will be updated later)
 writer.writeWord(0xa5e0) // Magic number
 writer.writeWord(1) // Frames
 writer.writeWord(20) // Width in pixels
@@ -49,12 +49,20 @@ writer.writeBytes(new Uint8Array(84)) // For future (set to zero)
 const chunkSize = 4
 
 // Frames
-writer.writeDword(0) // Frame size
+writer.writeDword(0) // Frame size (will be updated later)
 writer.writeWord(0xf1fa) // Magic number
 writer.writeWord(chunkSize) // Old field which specifies the number of "chunks" in this frame
 writer.writeWord(100) // Frame duration
 writer.writeBytes(new Uint8Array(2)) // For future (set to zero)
 writer.writeDword(chunkSize) // New field which specifies the number of "chunks" in this frame
+
+// Color profile chunk
+writer.writeDword(0) // Chunk size (will be updated later)
+writer.writeWord(0x2007) // Chunk type
+writer.writeWord(1) // Type: 1 - sRGB
+writer.writeWord(0) // Flags: 0 - no special gamma
+writer.writeFixed(0.0) // Fixed gamma: 1.0 = linear
+writer.writeBytes(new Uint8Array(8)) // Reserved (set to zero)
 
 document
   .querySelector<HTMLButtonElement>('#decompileBinFile')!
@@ -72,3 +80,21 @@ document
     const arrayBuffer = await file.arrayBuffer()
     decompileAseFile(arrayBuffer, log)
   })
+
+/*
+WORD        Type
+              0 - no color profile (as in old .aseprite files)
+              1 - use sRGB
+              2 - use the embedded ICC profile
+WORD        Flags
+              1 - use special fixed gamma
+FIXED       Fixed gamma (1.0 = linear)
+            Note: The gamma in sRGB is 2.2 in overall but it doesn't use
+            this fixed gamma, because sRGB uses different gamma sections
+            (linear and non-linear). If sRGB is specified with a fixed
+            gamma = 1.0, it means that this is Linear sRGB.
+BYTE[8]     Reserved (set to zero)
++ If type = ICC:
+  DWORD     ICC profile data length
+  BYTE[]    ICC profile data. More info: http://www.color.org/ICC1V42.pdf
+*/
