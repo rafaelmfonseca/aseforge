@@ -26,20 +26,16 @@ export class AseCelChunk extends AseBase {
     writer.writeWord(width) // Width in pixels
     writer.writeWord(height) // Height in pixels
 
-    /*
-    NOTE.3
-    Uncompressed Image: Uncompressed ("raw") images inside .aseprite files are saved row by row from top to bottom, and for each row/scanline, pixels are from left to right. Each pixel is a PIXEL (or a TILE in the case of tilemaps) as defined in the References section (so the number and order of bytes depends on the color mode of the image/sprite, or the tile format). Generally you'll not find uncompressed images in .aseprite files (only in very old .aseprite files).
-    */
+    const pixelData = this.imageData.data
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const index = (y * width + x) * 4
+        const red = pixelData[index]
+        const green = pixelData[index + 1]
+        const blue = pixelData[index + 2]
+        const alpha = pixelData[index + 3]
 
-    for (let i = 0; i < width; i++) {
-      for (let j = 0; j < height; j++) {
-        const index = (j * width + i) * 4
-        const red = this.imageData.data[index]
-        const green = this.imageData.data[index + 1]
-        const blue = this.imageData.data[index + 2]
-        const alpha = this.imageData.data[index + 3]
-
-        writer.writePixel(red, green, blue, alpha) // Pixel data (RGBA)
+        writer.writePixel(red, green, blue, alpha)
       }
     }
 
