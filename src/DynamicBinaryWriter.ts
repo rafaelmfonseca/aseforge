@@ -1,29 +1,75 @@
-export class DynamicBinaryWriter {
-  public buffer: Array<{ size: number; value: number }> = []
+export class BufferEntry {
+  protected type: string
+  protected size: number
+  protected value: number
 
-  // WORD: A 16-bit unsigned integer value
-  public writeWord(value: number): void {
-    this.buffer.push({ size: 2, value: value & 0xffff })
+  constructor(entry: { type: string; size: number; value: number }) {
+    this.type = entry.type
+    this.size = entry.size
+    this.value = entry.value
+  }
+
+  withValue(value: number): BufferEntry {
+    this.value = value
+    return this
+  }
+
+  getType(): string {
+    return this.type
+  }
+
+  getSize(): number {
+    return this.size
   }
 }
 
-/*
-Color Profile Chunk (0x2007)
-Color profile for RGB or grayscale values.
+export class DynamicBinaryWriter {
+  public buffer: Array<BufferEntry> = []
 
-WORD        Type
-              0 - no color profile (as in old .aseprite files)
-              1 - use sRGB
-              2 - use the embedded ICC profile
-WORD        Flags
-              1 - use special fixed gamma
-FIXED       Fixed gamma (1.0 = linear)
-            Note: The gamma in sRGB is 2.2 in overall but it doesn't use
-            this fixed gamma, because sRGB uses different gamma sections
-            (linear and non-linear). If sRGB is specified with a fixed
-            gamma = 1.0, it means that this is Linear sRGB.
-BYTE[8]     Reserved (set to zero)
-+ If type = ICC:
-  DWORD     ICC profile data length
-  BYTE[]    ICC profile data. More info: http://www.color.org/ICC1V42.pdf
-  */
+  // WORD: A 16-bit unsigned integer value
+  public writeWord(value: number): BufferEntry {
+    const index = this.buffer.push(new BufferEntry({ type: 'WORD', size: 2, value }))
+    return this.buffer[index - 1]
+  }
+
+  // DWORD: A 32-bit unsigned integer value
+  public writeDword(value: number): BufferEntry {
+    const index = this.buffer.push(new BufferEntry({ type: 'DWORD', size: 4, value }))
+    return this.buffer[index - 1]
+  }
+
+  // FIXED: A 32-bit fixed point (16.16) value
+  public writeFixed(value: number): BufferEntry {
+    const index = this.buffer.push(new BufferEntry({ type: 'FIXED', size: 4, value }))
+    return this.buffer[index - 1]
+  }
+
+  // BYTE: An 8-bit unsigned integer value
+  public writeByte(value: number): BufferEntry {
+    const index = this.buffer.push(new BufferEntry({ type: 'BYTE', size: 1, value }))
+    return this.buffer[index - 1]
+  }
+
+  // BYTE[n]: "n" bytes.
+  public writeBytes(value: number[]): void {
+    for (const byte of value) {
+      this.writeByte(byte)
+    }
+  }
+
+  public copyFrom(writer: DynamicBinaryWriter): void {
+    for (const entry of writer.buffer) {
+      this.buffer.push(entry)
+    }
+  }
+
+  // SHORT: A 16-bit signed integer value
+  public writeShort(value: number): BufferEntry {
+    const index = this.buffer.push(new BufferEntry({ type: 'SHORT', size: 2, value }))
+    return this.buffer[index - 1]
+  }
+
+  public getSize(): number {
+    return this.buffer.reduce((total, entry) => total + entry.getSize(), 0)
+  }
+}
