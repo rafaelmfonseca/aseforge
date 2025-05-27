@@ -1,4 +1,4 @@
-# Aseprite file studies
+# Aseprite File Studies
 
 This is a **study project** to help me understand and experiment with the Aseprite `.aseprite` file format using TypeScript.
 It is **not a production-ready tool**—just a learning playground for parsing and generating Aseprite files in the browser.
