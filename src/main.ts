@@ -1,11 +1,12 @@
 // https://github.com/aseprite/aseprite/blob/main/docs/ase-file-specs.md
 
-import { AseCelChunk } from './Models/AseCelChunk'
 import { AseColorProfileChunk } from './Models/AseColorProfileChunk'
-import { AseFrame } from './Models/AseFrame'
-import { AseHeader } from './Models/AseHeader'
-import { AseLayerChunk } from './Models/AseLayerChunk'
 import { AseOldPaletteChunk } from './Models/AseOldPaletteChunk'
+import { AseUserDataChunk } from './Models/AseUserDataChunk'
+import { AseLayerChunk } from './Models/AseLayerChunk'
+import { AseCelChunk } from './Models/AseCelChunk'
+import { AseHeader } from './Models/AseHeader'
+import { AseFrame } from './Models/AseFrame'
 import { decompileAseFile } from './page1'
 import { loadFile } from './utils'
 
@@ -39,6 +40,9 @@ aseFrame.addChild(oldAsePaletteChunk)
 
 const aseLayerChunk = new AseLayerChunk()
 aseFrame.addChild(aseLayerChunk)
+
+const aseUserDataChunk = new AseUserDataChunk('Alguma coisa aqui')
+aseFrame.addChild(aseUserDataChunk)
 
 const imageData = await new Promise<ImageData>((resolve, reject) => {
   const img = new Image()
