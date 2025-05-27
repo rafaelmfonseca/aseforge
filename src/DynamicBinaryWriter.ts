@@ -1,11 +1,14 @@
 import { BinaryWriter } from './BinaryWriter'
 
-export class BufferEntry {
-  protected type: string
-  protected size: number
-  protected value: number | string
+type BufferEntryType = 'WORD' | 'DWORD' | 'FIXED' | 'BYTE' | 'STRING' | 'SHORT' | 'PIXEL'
+type BufferEntryValue = number | string | [number, number, number, number]
 
-  constructor(entry: { type: string; size: number; value: number | string }) {
+export class BufferEntry {
+  protected type: BufferEntryType
+  protected size: number
+  protected value: BufferEntryValue
+
+  constructor(entry: { type: BufferEntryType; size: number; value: BufferEntryValue }) {
     this.type = entry.type
     this.size = entry.size
     this.value = entry.value
@@ -16,7 +19,7 @@ export class BufferEntry {
     return this
   }
 
-  getValue(): number | string {
+  getValue(): BufferEntryValue {
     return this.value
   }
 
@@ -79,7 +82,16 @@ export class DynamicBinaryWriter {
     return this.buffer[index - 1]
   }
 
-  public toUint8Array(): ArrayBuffer {
+  // PIXEL: One pixel, depending on the image pixel format:
+  // RGBA: BYTE[4], each pixel have 4 bytes in this order Red, Green, Blue, Alpha.
+  public writePixel(red: number, green: number, blue: number, alpha: number): BufferEntry {
+    const index = this.buffer.push(
+      new BufferEntry({ type: 'PIXEL', size: 4, value: [red, green, blue, alpha] }),
+    )
+    return this.buffer[index - 1]
+  }
+
+  public toArrayBuffer(): ArrayBuffer {
     const writer = new BinaryWriter()
     for (const entry of this.buffer) {
       switch (entry.getType()) {
@@ -100,6 +112,10 @@ export class DynamicBinaryWriter {
           break
         case 'STRING':
           writer.writeString(entry.getValue() as string)
+          break
+        case 'PIXEL':
+          const pixel = entry.getValue() as number[]
+          writer.writePixel(pixel[0], pixel[1], pixel[2], pixel[3])
           break
         default:
           throw new Error(`Unknown entry type: ${entry.getType()}`)

@@ -88,6 +88,19 @@ export function decompileAseFile(arrayBuffer: ArrayBuffer, log: (message: string
       if (headerFlag & 0x10) {
         log('Layer UUID: ' + reader.readUuid())
       }
+    } else if (chunkType == 0x2005) {
+      log('Layer Index: ' + reader.readWord())
+      log('X Position: ' + reader.readShort())
+      log('Y Position: ' + reader.readShort())
+      log('Opacity Level: ' + reader.readByte())
+      const celType = reader.readWord()
+      log('Cel Type: ' + celType)
+      log('Z-Index: ' + reader.readShort())
+      log('Reserved: ' + Array.from({ length: 5 }, () => reader.readByte()).join(', '))
+      if (celType === 0) {
+        log('Width: ' + reader.readWord())
+        log('Height: ' + reader.readWord())
+      }
     } else {
       reader.incrementOffset(chunkSize - 6)
     }
@@ -96,49 +109,43 @@ export function decompileAseFile(arrayBuffer: ArrayBuffer, log: (message: string
 }
 
 /*
-Layer Chunk (0x2004)
-In the first frame should be a set of layer chunks to determine the entire layers layout:
+Cel Chunk (0x2005)
+This chunk determine where to put a cel in the specified layer/frame.
 
-WORD        Flags:
-              1 = Visible
-              2 = Editable
-              4 = Lock movement
-              8 = Background
-              16 = Prefer linked cels
-              32 = The layer group should be displayed collapsed
-              64 = The layer is a reference layer
-WORD        Layer type
-              0 = Normal (image) layer
-              1 = Group
-              2 = Tilemap
-WORD        Layer child level (see NOTE.1)
-WORD        Default layer width in pixels (ignored)
-WORD        Default layer height in pixels (ignored)
-WORD        Blend mode (see NOTE.6)
-              Normal         = 0
-              Multiply       = 1
-              Screen         = 2
-              Overlay        = 3
-              Darken         = 4
-              Lighten        = 5
-              Color Dodge    = 6
-              Color Burn     = 7
-              Hard Light     = 8
-              Soft Light     = 9
-              Difference     = 10
-              Exclusion      = 11
-              Hue            = 12
-              Saturation     = 13
-              Color          = 14
-              Luminosity     = 15
-              Addition       = 16
-              Subtract       = 17
-              Divide         = 18
-BYTE        Opacity (see NOTE.6)
-BYTE[3]     For future (set to zero)
-STRING      Layer name
-+ If layer type = 2
-  DWORD     Tileset index
-+ If file header flags have bit 4:
-  UUID      Layer's universally unique identifier
+WORD        Layer index (see NOTE.2)
+SHORT       X position
+SHORT       Y position
+BYTE        Opacity level
+WORD        Cel Type
+            0 - Raw Image Data (unused, compressed image is preferred)
+            1 - Linked Cel
+            2 - Compressed Image
+            3 - Compressed Tilemap
+SHORT       Z-Index (see NOTE.5)
+            0 = default layer ordering
+            +N = show this cel N layers later
+            -N = show this cel N layers back
+BYTE[5]     For future (set to zero)
++ For cel type = 0 (Raw Image Data)
+  WORD      Width in pixels
+  WORD      Height in pixels
+  PIXEL[]   Raw pixel data: row by row from top to bottom,
+            for each scanline read pixels from left to right.
++ For cel type = 1 (Linked Cel)
+  WORD      Frame position to link with
++ For cel type = 2 (Compressed Image)
+  WORD      Width in pixels
+  WORD      Height in pixels
+  PIXEL[]   "Raw Cel" data compressed with ZLIB method (see NOTE.3)
++ For cel type = 3 (Compressed Tilemap)
+  WORD      Width in number of tiles
+  WORD      Height in number of tiles
+  WORD      Bits per tile (at the moment it's always 32-bit per tile)
+  DWORD     Bitmask for tile ID (e.g. 0x1fffffff for 32-bit tiles)
+  DWORD     Bitmask for X flip
+  DWORD     Bitmask for Y flip
+  DWORD     Bitmask for diagonal flip (swap X/Y axis)
+  BYTE[10]  Reserved
+  TILE[]    Row by row, from top to bottom tile by tile
+            compressed with ZLIB method (see NOTE.3)
 */

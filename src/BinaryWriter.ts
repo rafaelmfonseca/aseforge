@@ -84,6 +84,17 @@ export class BinaryWriter {
     return this.offset - (2 + length)
   }
 
+  // PIXEL: One pixel, depending on the image pixel format:
+  // RGBA: BYTE[4], each pixel have 4 bytes in this order Red, Green, Blue, Alpha.
+  public writePixel(r: number, g: number, b: number, a: number): number {
+    this.ensureCapacity(4)
+    this.buffer[this.offset++] = r & 0xff
+    this.buffer[this.offset++] = g & 0xff
+    this.buffer[this.offset++] = b & 0xff
+    this.buffer[this.offset++] = a & 0xff
+    return this.offset - 4
+  }
+
   // Get current write offset (used to compute sizes)
   public getLength(): number {
     return this.offset
