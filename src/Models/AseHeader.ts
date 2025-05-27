@@ -1,5 +1,7 @@
 import { DynamicBinaryWriter } from '../DynamicBinaryWriter'
 import { AseBase } from './AseBase'
+import { AseFrame } from './AseFrame'
+import { AseOldPaletteChunk } from './AseOldPaletteChunk'
 
 export class AseHeader extends AseBase {
   override writeContent(): [DynamicBinaryWriter, number] {
@@ -17,7 +19,7 @@ export class AseHeader extends AseBase {
     writer.writeDword(0) // Set be 0
     writer.writeByte(0) // Palette entry for transparent color
     writer.writeBytes(new Array(3).fill(0)) // Set to zero (ignore bytes)
-    writer.writeWord(33) // Number of colors (0 means 256 for old sprites)
+    writer.writeWord(this.getNumberOfColors()) // Number of colors (0 means 256 for old sprites)
     writer.writeByte(1) // Pixel width (pixel ratio is "pixel width/pixel height")
     writer.writeByte(1) // Pixel height
     writer.writeShort(0) // X position of the grid
@@ -38,5 +40,18 @@ export class AseHeader extends AseBase {
     fileSize.withValue(size)
 
     return [writer, size]
+  }
+
+  getNumberOfColors(): number {
+    const aseFrame = this.getChildrenOfType(AseFrame)
+    if (!aseFrame) {
+      return 0
+    }
+    const aseOldPaletteChunk = aseFrame.getChildrenOfType(AseOldPaletteChunk)
+    if (!aseOldPaletteChunk) {
+      return 0
+    }
+    const colors = aseOldPaletteChunk.getColors()
+    return colors.length > 0 ? colors.length : 256
   }
 }

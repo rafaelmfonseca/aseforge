@@ -28,4 +28,8 @@ export class AseOldPaletteChunk extends AseBase {
   addColor(red: number, green: number, blue: number): void {
     this.colors.push([red, green, blue])
   }
+
+  getColors(): [number, number, number][] {
+    return this.colors
+  }
 }
