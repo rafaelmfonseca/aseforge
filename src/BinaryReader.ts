@@ -44,10 +44,20 @@ export class BinaryReader {
 
   // WORD: string length (number of bytes)
   // BYTE[length]: characters (in UTF-8) The '\0' character is not included.
-  readString(length: number): string {
+  readString(): string {
+    const length = this.readWord()
     const bytes = new Uint8Array(this.view.buffer, this.offset, length)
     this.offset += length
-    return new TextDecoder().decode(bytes)
+    return new TextDecoder('utf-8').decode(bytes)
+  }
+
+  // UUID: A Universally Unique Identifier stored as BYTE[16].
+  readUuid(): string {
+    const bytes = new Uint8Array(this.view.buffer, this.offset, 16)
+    this.offset += 16
+    return Array.from(bytes)
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
   }
 
   incrementOffset(value: number): void {

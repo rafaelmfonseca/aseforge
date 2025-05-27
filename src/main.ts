@@ -3,6 +3,7 @@
 import { AseColorProfileChunk } from './Models/AseColorProfileChunk'
 import { AseFrame } from './Models/AseFrame'
 import { AseHeader } from './Models/AseHeader'
+import { AseLayerChunk } from './Models/AseLayerChunk'
 import { AseOldPaletteChunk } from './Models/AseOldPaletteChunk'
 import { decompileAseFile } from './page1'
 import { loadFile } from './utils'
@@ -64,6 +65,9 @@ oldAsePaletteChunk.addColor(143, 151, 74)
 oldAsePaletteChunk.addColor(138, 111, 48)
 oldAsePaletteChunk.addColor(255, 0, 0)
 aseFrame.addChild(oldAsePaletteChunk)
+
+const aseLayerChunk = new AseLayerChunk()
+aseFrame.addChild(aseLayerChunk)
 
 aseHeader.addChild(aseFrame)
 

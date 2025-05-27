@@ -71,6 +71,19 @@ export class BinaryWriter {
     return this.offset - data.length
   }
 
+  // STRING:
+  // WORD: string length (number of bytes)
+  // BYTE[length]: characters (in UTF-8) The '\0' character is not included.
+  public writeString(value: string): number {
+    const utf8Encoder = new TextEncoder()
+    const encoded = utf8Encoder.encode(value)
+    const length = encoded.length
+    this.ensureCapacity(2 + length) // 2 bytes for length + actual string bytes
+    this.writeWord(length) // Write the length
+    this.writeBytes(encoded) // Write the string bytes
+    return this.offset - (2 + length)
+  }
+
   // Get current write offset (used to compute sizes)
   public getLength(): number {
     return this.offset

@@ -11,7 +11,8 @@ export function decompileAseFile(arrayBuffer: ArrayBuffer, log: (message: string
   log('Width: ' + reader.readWord())
   log('Height: ' + reader.readWord())
   log('ColorDepth: ' + reader.readWord())
-  log('Flags: ' + reader.readDword())
+  const headerFlag = reader.readDword()
+  log('Flags: ' + headerFlag)
   log('Speed: ' + reader.readWord())
   log('Ignore Bytes: ' + reader.readDword() + ', ' + reader.readDword())
   log('Palette Index Transparent Color: ' + reader.readByte())
@@ -70,9 +71,74 @@ export function decompileAseFile(arrayBuffer: ArrayBuffer, log: (message: string
           log(`Color ${k + 1}: R: ${red}, G: ${green}, B: ${blue}`)
         }
       }
+    } else if (chunkType == 0x2004) {
+      log('Layer Flags: ' + reader.readWord())
+      const layerType = reader.readWord()
+      log('Layer Type: ' + layerType)
+      log('Layer Child Level: ' + reader.readWord())
+      log('Default Layer Width: ' + reader.readWord())
+      log('Default Layer Height: ' + reader.readWord())
+      log('Blend Mode: ' + reader.readWord())
+      log('Opacity: ' + reader.readByte())
+      log('Reserved: ' + Array.from({ length: 3 }, () => reader.readByte()).join(', '))
+      log('Layer Name: ' + reader.readString())
+      if (layerType === 2) {
+        log('Tileset Index: ' + reader.readDword())
+      }
+      if (headerFlag & 0x10) {
+        log('Layer UUID: ' + reader.readUuid())
+      }
     } else {
       reader.incrementOffset(chunkSize - 6)
     }
     log('<hr/>')
   }
 }
+
+/*
+Layer Chunk (0x2004)
+In the first frame should be a set of layer chunks to determine the entire layers layout:
+
+WORD        Flags:
+              1 = Visible
+              2 = Editable
+              4 = Lock movement
+              8 = Background
+              16 = Prefer linked cels
+              32 = The layer group should be displayed collapsed
+              64 = The layer is a reference layer
+WORD        Layer type
+              0 = Normal (image) layer
+              1 = Group
+              2 = Tilemap
+WORD        Layer child level (see NOTE.1)
+WORD        Default layer width in pixels (ignored)
+WORD        Default layer height in pixels (ignored)
+WORD        Blend mode (see NOTE.6)
+              Normal         = 0
+              Multiply       = 1
+              Screen         = 2
+              Overlay        = 3
+              Darken         = 4
+              Lighten        = 5
+              Color Dodge    = 6
+              Color Burn     = 7
+              Hard Light     = 8
+              Soft Light     = 9
+              Difference     = 10
+              Exclusion      = 11
+              Hue            = 12
+              Saturation     = 13
+              Color          = 14
+              Luminosity     = 15
+              Addition       = 16
+              Subtract       = 17
+              Divide         = 18
+BYTE        Opacity (see NOTE.6)
+BYTE[3]     For future (set to zero)
+STRING      Layer name
++ If layer type = 2
+  DWORD     Tileset index
++ If file header flags have bit 4:
+  UUID      Layer's universally unique identifier
+*/

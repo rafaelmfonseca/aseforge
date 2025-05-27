@@ -3,9 +3,9 @@ import { BinaryWriter } from './BinaryWriter'
 export class BufferEntry {
   protected type: string
   protected size: number
-  protected value: number
+  protected value: number | string
 
-  constructor(entry: { type: string; size: number; value: number }) {
+  constructor(entry: { type: string; size: number; value: number | string }) {
     this.type = entry.type
     this.size = entry.size
     this.value = entry.value
@@ -16,7 +16,7 @@ export class BufferEntry {
     return this
   }
 
-  getValue(): number {
+  getValue(): number | string {
     return this.value
   }
 
@@ -56,6 +56,16 @@ export class DynamicBinaryWriter {
     return this.buffer[index - 1]
   }
 
+  // STRING:
+  // WORD: string length (number of bytes)
+  // BYTE[length]: characters (in UTF-8) The '\0' character is not included.
+  public writeString(value: string): BufferEntry {
+    const index = this.buffer.push(
+      new BufferEntry({ type: 'STRING', size: 2 + value.length, value }),
+    )
+    return this.buffer[index - 1]
+  }
+
   // BYTE[n]: "n" bytes.
   public writeBytes(value: number[]): void {
     for (const byte of value) {
@@ -74,19 +84,22 @@ export class DynamicBinaryWriter {
     for (const entry of this.buffer) {
       switch (entry.getType()) {
         case 'WORD':
-          writer.writeWord(entry.getValue())
+          writer.writeWord(entry.getValue() as number)
           break
         case 'DWORD':
-          writer.writeDword(entry.getValue())
+          writer.writeDword(entry.getValue() as number)
           break
         case 'FIXED':
-          writer.writeFixed(entry.getValue())
+          writer.writeFixed(entry.getValue() as number)
           break
         case 'BYTE':
-          writer.writeByte(entry.getValue())
+          writer.writeByte(entry.getValue() as number)
           break
         case 'SHORT':
-          writer.writeShort(entry.getValue())
+          writer.writeShort(entry.getValue() as number)
+          break
+        case 'STRING':
+          writer.writeString(entry.getValue() as string)
           break
         default:
           throw new Error(`Unknown entry type: ${entry.getType()}`)
