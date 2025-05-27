@@ -1,7 +1,9 @@
 // https://github.com/aseprite/aseprite/blob/main/docs/ase-file-specs.md
 
-import { BinaryReader } from './BinaryReader'
-import { BinaryWriter } from './BinaryWriter'
+import { AseColorProfileChunk } from './Models/AseColorProfileChunk'
+import { AseFrame } from './Models/AseFrame'
+import { AseHeader } from './Models/AseHeader'
+import { AseOldPaletteChunk } from './Models/AseOldPaletteChunk'
 import { decompileAseFile } from './page1'
 import { loadFile } from './utils'
 
@@ -22,59 +24,54 @@ function log(message: string) {
   logs.appendChild(p)
 }
 
-const writer = new BinaryWriter()
+const aseHeader = new AseHeader()
 
-// Header
-const fileSizePos = writer.writeDword(0) // Size of the file (will be updated later)
-writer.writeWord(0xa5e0) // Magic number
-writer.writeWord(1) // Frames
-writer.writeWord(20) // Width in pixels
-writer.writeWord(20) // Height in pixels
-writer.writeWord(32) // Color depth (bits per pixel)
-writer.writeDword(1) // Flags (layer opacity has valid value)
-writer.writeWord(100) // Speed (milliseconds between frame)
-writer.writeDword(0) // Set be 0
-writer.writeDword(0) // Set be 0
-writer.writeByte(0) // Palette entry for transparent color
-writer.writeBytes(new Uint8Array(3)) // Set to zero (ignore bytes)
-writer.writeWord(33) // Number of colors (0 means 256 for old sprites)
-writer.writeByte(1) // Pixel width (pixel ratio is "pixel width/pixel height")
-writer.writeByte(1) // Pixel height
-writer.writeShort(0) // X position of the grid
-writer.writeShort(0) // Y position of the grid
-writer.writeWord(16) // Grid width (zero if there is no grid)
-writer.writeWord(16) // Grid height (zero if there is no grid)
-writer.writeBytes(new Uint8Array(84)) // For future (set to zero)
+const aseFrame = new AseFrame()
+aseFrame.addChild(new AseColorProfileChunk())
 
-const chunkSize = 4
+const oldAsePaletteChunk = new AseOldPaletteChunk()
+oldAsePaletteChunk.addColor(0, 0, 0)
+oldAsePaletteChunk.addColor(34, 32, 52)
+oldAsePaletteChunk.addColor(69, 40, 60)
+oldAsePaletteChunk.addColor(102, 57, 49)
+oldAsePaletteChunk.addColor(143, 86, 59)
+oldAsePaletteChunk.addColor(223, 113, 38)
+oldAsePaletteChunk.addColor(217, 160, 102)
+oldAsePaletteChunk.addColor(238, 195, 154)
+oldAsePaletteChunk.addColor(251, 242, 54)
+oldAsePaletteChunk.addColor(153, 229, 80)
+oldAsePaletteChunk.addColor(106, 190, 48)
+oldAsePaletteChunk.addColor(55, 148, 110)
+oldAsePaletteChunk.addColor(75, 105, 47)
+oldAsePaletteChunk.addColor(82, 75, 36)
+oldAsePaletteChunk.addColor(50, 60, 57)
+oldAsePaletteChunk.addColor(63, 63, 116)
+oldAsePaletteChunk.addColor(48, 96, 130)
+oldAsePaletteChunk.addColor(91, 110, 225)
+oldAsePaletteChunk.addColor(99, 155, 255)
+oldAsePaletteChunk.addColor(95, 205, 228)
+oldAsePaletteChunk.addColor(203, 219, 252)
+oldAsePaletteChunk.addColor(255, 255, 255)
+oldAsePaletteChunk.addColor(155, 173, 183)
+oldAsePaletteChunk.addColor(132, 126, 135)
+oldAsePaletteChunk.addColor(105, 106, 106)
+oldAsePaletteChunk.addColor(89, 86, 82)
+oldAsePaletteChunk.addColor(118, 66, 138)
+oldAsePaletteChunk.addColor(172, 50, 50)
+oldAsePaletteChunk.addColor(217, 87, 99)
+oldAsePaletteChunk.addColor(215, 123, 186)
+oldAsePaletteChunk.addColor(143, 151, 74)
+oldAsePaletteChunk.addColor(138, 111, 48)
+oldAsePaletteChunk.addColor(255, 0, 0)
+aseFrame.addChild(oldAsePaletteChunk)
 
-// Frames
-const frameSizePos = writer.writeDword(0) // Frame size (will be updated later)
-writer.writeWord(0xf1fa) // Magic number
-writer.writeWord(chunkSize) // Old field which specifies the number of "chunks" in this frame
-writer.writeWord(100) // Frame duration
-writer.writeBytes(new Uint8Array(2)) // For future (set to zero)
-writer.writeDword(chunkSize) // New field which specifies the number of "chunks" in this frame
-
-// Color profile chunk
-const colorChunkSizePos = writer.writeDword(0) // Chunk size (will be updated later)
-writer.writeWord(0x2007) // Chunk type
-writer.writeWord(1) // Type: 1 - sRGB
-writer.writeWord(0) // Flags: 0 - no special gamma
-writer.writeFixed(0.0) // Fixed gamma: 1.0 = linear
-writer.writeBytes(new Uint8Array(8)) // Reserved (set to zero)
-
-// After writing all chunks, update sizes
-const totalSize = writer.getLength()
-writer.writeDwordAt(colorChunkSizePos, totalSize - (colorChunkSizePos + 4))
-writer.writeDwordAt(frameSizePos, totalSize - (frameSizePos + 4))
-writer.writeDwordAt(fileSizePos, totalSize)
+aseHeader.addChild(aseFrame)
 
 document
   .querySelector<HTMLButtonElement>('#decompileBinFile')!
   .addEventListener('click', async () => {
     logs.innerHTML = ''
-    const arrayBuffer = writer.getArrayBuffer()
+    const arrayBuffer = aseHeader.writeContent()[0].toUint8Array()
     decompileAseFile(arrayBuffer, log)
   })
 

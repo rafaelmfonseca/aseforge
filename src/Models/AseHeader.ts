@@ -28,8 +28,8 @@ export class AseHeader extends AseBase {
 
     let totalSize = 0
     for (const child of this.children) {
-      const [writer, size] = child.writeContent()
-      writer.copyFrom(writer)
+      const [childrenWriter, size] = child.writeContent()
+      writer.copyFrom(childrenWriter)
 
       totalSize += size
     }

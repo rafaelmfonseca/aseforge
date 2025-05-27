@@ -56,13 +56,13 @@ export function decompileAseFile(arrayBuffer: ArrayBuffer, log: (message: string
       log('Reserved: ' + Array.from({ length: 8 }, () => reader.readByte()).join(', '))
     } else if (chunkType == 0x0004) {
       // Old Palette Chunk
-      log('Old Palette Chunk')
       const packetCount = reader.readWord()
       log('Number of Packets: ' + packetCount)
       for (let j = 0; j < packetCount; j++) {
         const skipEntries = reader.readByte()
         const colorCount = reader.readByte()
-        log(`Packet ${j + 1}: Skip Entries: ${skipEntries}, Color Count: ${colorCount}`)
+        log(`Skip Entries: ${skipEntries}`)
+        log(`Color Count: ${colorCount}`)
         for (let k = 0; k < (colorCount === 0 ? 256 : colorCount); k++) {
           const red = reader.readByte()
           const green = reader.readByte()

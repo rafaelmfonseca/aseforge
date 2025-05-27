@@ -1,3 +1,5 @@
+import { BinaryWriter } from './BinaryWriter'
+
 export class BufferEntry {
   protected type: string
   protected size: number
@@ -12,6 +14,10 @@ export class BufferEntry {
   withValue(value: number): BufferEntry {
     this.value = value
     return this
+  }
+
+  getValue(): number {
+    return this.value
   }
 
   getType(): string {
@@ -57,16 +63,42 @@ export class DynamicBinaryWriter {
     }
   }
 
-  public copyFrom(writer: DynamicBinaryWriter): void {
-    for (const entry of writer.buffer) {
-      this.buffer.push(entry)
-    }
-  }
-
   // SHORT: A 16-bit signed integer value
   public writeShort(value: number): BufferEntry {
     const index = this.buffer.push(new BufferEntry({ type: 'SHORT', size: 2, value }))
     return this.buffer[index - 1]
+  }
+
+  public toUint8Array(): ArrayBuffer {
+    const writer = new BinaryWriter()
+    for (const entry of this.buffer) {
+      switch (entry.getType()) {
+        case 'WORD':
+          writer.writeWord(entry.getValue())
+          break
+        case 'DWORD':
+          writer.writeDword(entry.getValue())
+          break
+        case 'FIXED':
+          writer.writeFixed(entry.getValue())
+          break
+        case 'BYTE':
+          writer.writeByte(entry.getValue())
+          break
+        case 'SHORT':
+          writer.writeShort(entry.getValue())
+          break
+        default:
+          throw new Error(`Unknown entry type: ${entry.getType()}`)
+      }
+    }
+    return writer.getArrayBuffer()
+  }
+
+  public copyFrom(writer: DynamicBinaryWriter): void {
+    for (const entry of writer.buffer) {
+      this.buffer.push(entry)
+    }
   }
 
   public getSize(): number {
